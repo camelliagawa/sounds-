@@ -226,3 +226,61 @@ function loop(now) {
 }
 
 requestAnimationFrame(loop);
+
+// ---- Pull to Refresh (モバイル) ----
+(function setupPullToRefresh() {
+  const THRESHOLD = 80;
+  let startY    = 0;
+  let isPulling = false;
+
+  const el = document.createElement('div');
+  el.id = 'ptr-indicator';
+  el.innerHTML = '<span id="ptr-icon">↓</span>';
+  document.body.appendChild(el);
+
+  const icon = document.getElementById('ptr-icon');
+
+  function setPos(ty, opacity) {
+    el.style.transform = `translateX(-50%) translateY(${ty}px)`;
+    el.style.opacity   = String(opacity);
+  }
+
+  function reset() {
+    setPos(-60, 0);
+    el.classList.remove('ready', 'refreshing');
+    icon.textContent = '↓';
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0) {
+      startY    = e.touches[0].clientY;
+      isPulling = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!isPulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { isPulling = false; reset(); return; }
+
+    const progress = Math.min(dy / THRESHOLD, 1);
+    setPos(Math.min(dy * 0.55, 52) - 60, Math.min(progress * 1.6, 1));
+
+    const ready = dy >= THRESHOLD;
+    el.classList.toggle('ready', ready);
+    icon.textContent = ready ? '↻' : '↓';
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!isPulling) return;
+    isPulling = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy >= THRESHOLD) {
+      el.classList.add('refreshing');
+      setPos(-8, 1);
+      setTimeout(() => location.reload(), 400);
+    } else {
+      reset();
+    }
+  });
+})();

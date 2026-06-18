@@ -1,10 +1,9 @@
-// sampler.js
-// Tone.js を使ったサンプル音源。ピアノ・バイオリン・フルート・チェロを
-// シンセで近似し、鳴っている音の基本周波数を取り出せるようにする。
+// sampler.js — Tone.js サンプル音源
+// Reverb は非同期初期化が必要なため JCReverb (同期) に変更。
 
 const NOTE_FREQ = {
   C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23,
-  G4: 392.0, A4: 440.0, B4: 493.88, C5: 523.25,
+  G4: 392.0,  A4: 440.0,  B4: 493.88, C5: 523.25,
 };
 
 export const NOTES = Object.keys(NOTE_FREQ);
@@ -14,66 +13,70 @@ export class SampleInstrument {
   constructor() {
     this.current = 'piano';
     this.synth = null;
-    this._ready = false;
+    this._started = false;
   }
 
-  async ensureStarted() {
-    if (!this._ready) {
+  async _ensureCtx() {
+    if (!this._started) {
       await Tone.start();
-      this._ready = true;
+      this._started = true;
+    }
+    if (Tone.context.state !== 'running') {
+      await Tone.context.resume();
     }
   }
 
   _build(type) {
     if (this.synth) {
-      this.synth.dispose();
+      try { this.synth.dispose(); } catch {}
       this.synth = null;
     }
+
+    // JCReverb は同期で使えるリバーブ
+    const reverb = new Tone.JCReverb(0.25).toDestination();
+    const vol = new Tone.Volume(-3).connect(reverb);
+
     let synth;
     switch (type) {
       case 'violin':
-        // 弦：ノコギリ波＋ゆっくりした立ち上がり＋ビブラート
         synth = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.18, decay: 0.1, sustain: 0.9, release: 0.6 },
+          envelope: { attack: 0.18, decay: 0.1, sustain: 0.85, release: 0.8 },
         });
         break;
       case 'flute':
-        // 笛：ほぼ正弦波・柔らかい立ち上がり
         synth = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: 'sine' },
-          envelope: { attack: 0.08, decay: 0.1, sustain: 0.8, release: 0.4 },
+          envelope: { attack: 0.1, decay: 0.05, sustain: 0.9, release: 0.5 },
         });
         break;
       case 'cello':
-        // チェロ：低めの三角＋ノコギリ
         synth = new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'fatsawtooth', count: 3, spread: 20 },
-          envelope: { attack: 0.25, decay: 0.2, sustain: 0.85, release: 0.8 },
+          oscillator: { type: 'fatsawtooth', count: 3, spread: 25 },
+          envelope: { attack: 0.3, decay: 0.15, sustain: 0.8, release: 1.0 },
         });
         break;
       case 'piano':
       default:
-        // ピアノ：打鍵的なエンベロープ
         synth = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: 'triangle' },
-          envelope: { attack: 0.005, decay: 0.4, sustain: 0.25, release: 1.2 },
+          envelope: { attack: 0.005, decay: 0.5, sustain: 0.2, release: 1.5 },
         });
         break;
     }
-    const reverb = new Tone.Reverb({ decay: 1.6, wet: 0.18 }).toDestination();
-    synth.connect(reverb);
+
+    synth.connect(vol);
     this.synth = synth;
     this.current = type;
   }
 
   async setInstrument(type) {
-    await this.ensureStarted();
+    await this._ensureCtx();
     this._build(type);
   }
 
   async play(note) {
-    await this.ensureStarted();
+    await this._ensureCtx();
     if (!this.synth) this._build(this.current);
     this.synth.triggerAttackRelease(note, '8n');
     return NOTE_FREQ[note];

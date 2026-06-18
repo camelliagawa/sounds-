@@ -1,124 +1,133 @@
 // main.js
-// 全モジュールを束ね、UI操作・描画ループ・音声反映を制御する。
 
 import { ParticleSystem } from './chladni.js';
 import { Renderer } from './renderer.js';
 import { AudioInput, supportsTabAudio } from './audio.js';
-import { SampleInstrument, NOTES, noteToFreq } from './sampler.js';
+import { SampleInstrument, NOTES } from './sampler.js';
 import { CanvasRecorder, saveSnapshot } from './recorder.js';
 
 const $ = (id) => document.getElementById(id);
 
-// ---- 状態 ----
+// ---- インスタンス ----
 const particles = new ParticleSystem(12000);
-const renderer = new Renderer($('canvas'));
-const audio = new AudioInput();
+const renderer  = new Renderer($('canvas'));
+const audio     = new AudioInput();
 const instrument = new SampleInstrument();
-const recorder = new CanvasRecorder($('canvas'));
+const recorder  = new CanvasRecorder($('canvas'));
 
-let mode = 'manual'; // 'manual' | 'mic' | 'tab'
+let mode       = 'manual'; // 'manual' | 'mic' | 'tab'
 let manualFreq = 440;
+let animPaused = false;    // アニメーション一時停止フラグ
 
 // ---- HUD ----
 const hud = {
   mode: $('hud-mode'),
   freq: $('hud-freq'),
-  mn: $('hud-mn'),
-  fps: $('hud-fps'),
+  mn:   $('hud-mn'),
+  fps:  $('hud-fps'),
 };
 const MODE_LABEL = { manual: '手動', mic: 'マイク', tab: 'タブ音声' };
 
-// ---- パラメータ反映：周波数 ----
+// ---- アニメーション 再生/停止 ----
+const btnAnim   = $('btn-anim');
+const iconPause = $('icon-pause');
+const iconPlay  = $('icon-play');
+
+btnAnim.addEventListener('click', () => {
+  animPaused = !animPaused;
+  btnAnim.classList.toggle('paused', animPaused);
+  iconPause.classList.toggle('hidden', animPaused);
+  iconPlay.classList.toggle('hidden', !animPaused);
+});
+
+// ---- パラメータ同期 ----
 function applyFreq(freq) {
   manualFreq = freq;
   particles.field.setFromFrequency(freq);
 }
 
-// スライダー⇄数値入力 を同期する汎用ヘルパ
 function linkRangeNumber(rangeId, numId, onChange) {
   const range = $(rangeId);
-  const num = $(numId);
+  const num   = $(numId);
   const clamp = (v) => Math.max(+range.min, Math.min(+range.max, v));
-  const sync = (v, from) => {
+  const sync  = (v, from) => {
     v = clamp(v);
     if (from !== 'range') range.value = v;
-    if (from !== 'num') num.value = v;
+    if (from !== 'num')   num.value   = v;
     onChange(v);
   };
   range.addEventListener('input', () => sync(+range.value, 'range'));
-  num.addEventListener('input', () => {
-    if (num.value === '') return;
-    sync(+num.value, 'num');
-  });
-  num.addEventListener('blur', () => sync(+num.value || +range.min, 'num'));
+  num.addEventListener('input',   () => { if (num.value !== '') sync(+num.value, 'num'); });
+  num.addEventListener('blur',    () => sync(+num.value || +range.min, 'num'));
   return sync;
 }
 
-linkRangeNumber('freq-range', 'freq-num', (v) => applyFreq(v));
+linkRangeNumber('freq-range',  'freq-num',  (v) => applyFreq(v));
 linkRangeNumber('count-range', 'count-num', (v) => particles.setCount(v));
-linkRangeNumber('vibr-range', 'vibr-num', (v) => particles.setVibration(v / 100));
+linkRangeNumber('vibr-range',  'vibr-num',  (v) => particles.setVibration(v / 100));
 
-// 初期値反映
 applyFreq(440);
 particles.setVibration(0.45);
 
-// ---- 入力ソース切替 ----
-const srcBtns = {
-  manual: $('btn-manual'),
-  mic: $('btn-mic'),
-  tab: $('btn-tab'),
-};
-const srcHint = $('src-hint');
+// ---- 入力ソース ----
+const srcHint     = $('src-hint');
+const btnAudioStop = $('btn-audio-stop');
 
-function setSourceButtons(active) {
-  for (const k in srcBtns) srcBtns[k].classList.toggle('active', k === active);
+const SRC_HINT = {
+  manual: '手動モード：スライダーで振動を操作します。',
+  mic:    'マイクで拾った音を反映中。YouTubeをスピーカーで流してもOK。',
+  tab:    'タブ音声を反映中。YouTube等のタブを選べばリアルタイムで変化します。',
+};
+
+function updateSourceUI(activeMode, hint) {
+  document.querySelectorAll('.src-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === activeMode);
+  });
+  const isLive = activeMode === 'mic' || activeMode === 'tab';
+  btnAudioStop.classList.toggle('hidden', !isLive);
+  srcHint.textContent = hint ?? SRC_HINT[activeMode];
+  hud.mode.textContent = MODE_LABEL[activeMode];
 }
 
 async function switchMode(next) {
   try {
     if (next === 'mic') {
-      srcHint.textContent = 'マイクの許可を求めています…';
+      updateSourceUI('mic', 'マイクの許可を求めています…');
       await audio.startMic();
-      srcHint.textContent = 'マイクで拾った音を反映中。YouTubeをスピーカーで流してもOK。';
     } else if (next === 'tab') {
       if (!supportsTabAudio()) {
-        srcHint.textContent = 'このブラウザはタブ音声キャプチャに未対応です（PC版Chrome/Edge推奨）。';
+        updateSourceUI('manual', 'このブラウザはタブ音声に未対応です（PC版Chrome/Edge推奨）。');
         return;
       }
-      srcHint.textContent = '共有ダイアログで「タブ」を選び「タブの音声を共有」にチェックしてください。';
+      updateSourceUI('tab', '共有ダイアログでタブを選び「タブの音声を共有」にチェックしてください。');
       await audio.startTab();
-      srcHint.textContent = 'タブ音声を反映中。YouTube等のタブを選べばリアルタイムで図形が変化します。';
     } else {
       await audio.stop();
-      srcHint.textContent = '手動モード：スライダー／数値で振動を操作します。';
     }
     mode = next;
-    hud.mode.textContent = MODE_LABEL[next];
-    setSourceButtons(next);
+    updateSourceUI(next);
   } catch (err) {
     console.error(err);
-    if (err && err.message === 'NO_TAB_AUDIO') {
-      srcHint.textContent = '音声トラックが取得できませんでした。「タブの音声を共有」にチェックを入れて再試行してください。';
-    } else if (err && err.name === 'NotAllowedError') {
-      srcHint.textContent = '権限が拒否されました。ブラウザの設定で許可してください。';
-    } else {
-      srcHint.textContent = 'エラー：' + (err && err.message ? err.message : '不明なエラー');
-    }
+    let msg = 'エラーが発生しました。再試行してください。';
+    if (err?.message === 'NO_TAB_AUDIO') msg = '音声トラックが取得できませんでした。「タブの音声を共有」にチェックして再試行してください。';
+    else if (err?.name === 'NotAllowedError') msg = '権限が拒否されました。ブラウザの設定でマイクを許可してください。';
     await audio.stop();
     mode = 'manual';
-    hud.mode.textContent = MODE_LABEL.manual;
-    setSourceButtons('manual');
+    updateSourceUI('manual', msg);
   }
 }
 
-srcBtns.manual.addEventListener('click', () => switchMode('manual'));
-srcBtns.mic.addEventListener('click', () => switchMode('mic'));
-srcBtns.tab.addEventListener('click', () => switchMode('tab'));
+document.querySelectorAll('.src-btn').forEach((btn) => {
+  btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+});
 
-// タブ音声未対応環境ではボタンを無効化
+// 音声停止ボタン → 手動モードへ
+btnAudioStop.addEventListener('click', () => switchMode('manual'));
+
+// タブ音声未対応の場合はボタンを無効化
 if (!supportsTabAudio()) {
-  srcBtns.tab.disabled = true;
-  srcBtns.tab.title = 'この環境では利用できません';
+  $('btn-tab').disabled = true;
+  $('btn-tab').title = 'PC版Chrome/Edgeで利用可能';
 }
 
 // ---- サンプル音源 ----
@@ -135,13 +144,21 @@ instRow.addEventListener('click', async (e) => {
 const keysEl = $('keys');
 NOTES.forEach((note) => {
   const b = document.createElement('button');
-  b.textContent = note;
+  b.className = 'key-btn';
+  b.textContent = note.replace(/\d/, ''); // 'C4' → 'C'
+  b.title = note;
+
   b.addEventListener('click', async () => {
+    b.classList.add('playing');
+    setTimeout(() => b.classList.remove('playing'), 400);
+
     const freq = await instrument.play(note);
-    // 手動モードのときは鳴らした音を図形へ反映
+
+    // 手動モードのとき図形へ反映
     if (mode === 'manual') {
-      $('freq-range').value = Math.round(freq);
-      $('freq-num').value = Math.round(freq);
+      const v = Math.round(freq);
+      $('freq-range').value = v;
+      $('freq-num').value   = v;
       applyFreq(freq);
     }
   });
@@ -149,22 +166,23 @@ NOTES.forEach((note) => {
 });
 
 // ---- 録画 / スナップショット ----
-const recBtn = $('btn-record');
+const recBtn   = $('btn-record');
 const recBadge = $('rec-badge');
+
 recBtn.addEventListener('click', () => {
   if (!CanvasRecorder.isSupported()) {
-    alert('このブラウザは録画(MediaRecorder)に未対応です。');
+    alert('このブラウザは録画に未対応です。');
     return;
   }
   if (recorder.recording) {
     recorder.stop();
     recBtn.textContent = '⏺ 録画開始';
-    recBtn.classList.remove('active');
+    recBtn.classList.remove('recording');
     recBadge.classList.add('hidden');
   } else {
     recorder.start(30);
-    recBtn.textContent = '⏹ 録画停止 / 保存';
-    recBtn.classList.add('active');
+    recBtn.textContent = '⏹ 停止・保存';
+    recBtn.classList.add('recording');
     recBadge.classList.remove('hidden');
   }
 });
@@ -175,9 +193,12 @@ $('btn-snapshot').addEventListener('click', () => saveSnapshot($('canvas')));
 let lastFreqUpdate = 0;
 let frames = 0;
 let fpsTime = performance.now();
+let rafId  = null;
 
 function loop(now) {
-  // 音声入力モードなら周波数を検出して反映（5フレームに1回）
+  rafId = requestAnimationFrame(loop);
+
+  // 音声モードの周波数検出
   if ((mode === 'mic' || mode === 'tab') && now - lastFreqUpdate > 80) {
     const f = audio.detectPitch();
     if (f) {
@@ -189,19 +210,19 @@ function loop(now) {
     hud.freq.textContent = Math.round(manualFreq) + ' Hz';
   }
 
-  particles.step();
-  renderer.draw(particles);
+  if (!animPaused) {
+    particles.step();
+    renderer.draw(particles);
+  }
 
   hud.mn.textContent = `m=${particles.field.m} n=${particles.field.n}`;
 
-  // FPS
   frames++;
   if (now - fpsTime >= 1000) {
     hud.fps.textContent = frames + ' fps';
     frames = 0;
     fpsTime = now;
   }
-
-  requestAnimationFrame(loop);
 }
+
 requestAnimationFrame(loop);

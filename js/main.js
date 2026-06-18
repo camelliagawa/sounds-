@@ -252,24 +252,30 @@ requestAnimationFrame(loop);
   }
 
   document.addEventListener('touchstart', (e) => {
-    if (window.scrollY === 0) {
+    // iOS Safari の safe-area ずれを考慮して < 10 で判定
+    if (window.scrollY < 10) {
       startY    = e.touches[0].clientY;
       isPulling = true;
     }
   }, { passive: true });
 
+  // passive: false にして iOS Safari でも preventDefault() を呼べるようにする
   document.addEventListener('touchmove', (e) => {
     if (!isPulling) return;
     const dy = e.touches[0].clientY - startY;
     if (dy <= 0) { isPulling = false; reset(); return; }
 
-    const progress = Math.min(dy / THRESHOLD, 1);
-    setPos(Math.min(dy * 0.55, 52) - 60, Math.min(progress * 1.6, 1));
+    // 引き下げ中はページスクロール（バウンス）を止める
+    if (e.cancelable) e.preventDefault();
+
+    // 修正: -60px (非表示) → dy=60 で 0px (画面端) → dy=80 で +20px (見える)
+    const ty = -60 + Math.min(dy, 80);
+    setPos(ty, Math.min(dy / THRESHOLD, 1));
 
     const ready = dy >= THRESHOLD;
     el.classList.toggle('ready', ready);
     icon.textContent = ready ? '↻' : '↓';
-  }, { passive: true });
+  }, { passive: false });
 
   document.addEventListener('touchend', (e) => {
     if (!isPulling) return;
@@ -277,10 +283,15 @@ requestAnimationFrame(loop);
     const dy = e.changedTouches[0].clientY - startY;
     if (dy >= THRESHOLD) {
       el.classList.add('refreshing');
-      setPos(-8, 1);
+      setPos(20, 1);
       setTimeout(() => location.reload(), 400);
     } else {
       reset();
     }
+  });
+
+  document.addEventListener('touchcancel', () => {
+    isPulling = false;
+    reset();
   });
 })();

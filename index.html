@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a12" />
+  <title>Chladni Visualizer — クラドニ図形</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <!-- Tone.js (サンプル音源用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- 可視化キャンバス -->
+    <section id="stage">
+      <canvas id="canvas"></canvas>
+      <div id="hud">
+        <span id="hud-mode">手動</span>
+        <span id="hud-freq">— Hz</span>
+        <span id="hud-mn">m=2 n=3</span>
+        <span id="hud-fps">— fps</span>
+      </div>
+      <div id="rec-badge" class="hidden">● REC</div>
+    </section>
+
+    <!-- コントロールパネル -->
+    <section id="panel">
+      <!-- 入力ソース -->
+      <div class="group">
+        <h2>音の入力ソース</h2>
+        <div class="row btn-row">
+          <button id="btn-mic" class="src-btn">🎤 マイク</button>
+          <button id="btn-tab" class="src-btn">🖥️ タブ音声</button>
+          <button id="btn-manual" class="src-btn active">✋ 手動</button>
+        </div>
+        <p class="hint" id="src-hint">手動モード：下のスライダー／数値で振動を操作します。</p>
+      </div>
+
+      <!-- パラメータ -->
+      <div class="group">
+        <h2>パラメータ</h2>
+
+        <div class="ctrl">
+          <label for="freq-range">周波数 <span class="unit">(Hz)</span></label>
+          <div class="ctrl-inputs">
+            <input type="range" id="freq-range" min="50" max="2000" step="1" value="440" />
+            <input type="number" id="freq-num" min="50" max="2000" step="1" value="440" />
+          </div>
+        </div>
+
+        <div class="ctrl">
+          <label for="count-range">粒子数</label>
+          <div class="ctrl-inputs">
+            <input type="range" id="count-range" min="500" max="40000" step="500" value="12000" />
+            <input type="number" id="count-num" min="500" max="40000" step="500" value="12000" />
+          </div>
+        </div>
+
+        <div class="ctrl">
+          <label for="vibr-range">振動の強さ</label>
+          <div class="ctrl-inputs">
+            <input type="range" id="vibr-range" min="0" max="100" step="1" value="45" />
+            <input type="number" id="vibr-num" min="0" max="100" step="1" value="45" />
+          </div>
+        </div>
+      </div>
+
+      <!-- サンプル音源 -->
+      <div class="group">
+        <h2>サンプル音源</h2>
+        <div class="row btn-row" id="inst-row">
+          <button class="inst-btn active" data-inst="piano">ピアノ</button>
+          <button class="inst-btn" data-inst="violin">バイオリン</button>
+          <button class="inst-btn" data-inst="flute">フルート</button>
+          <button class="inst-btn" data-inst="cello">チェロ</button>
+        </div>
+        <div class="row keys" id="keys"></div>
+        <p class="hint">鍵盤を押すと音が鳴り、その周波数が図形に反映されます。</p>
+      </div>
+
+      <!-- 録画 -->
+      <div class="group">
+        <h2>録画</h2>
+        <div class="row btn-row">
+          <button id="btn-record">⏺ 録画開始</button>
+          <button id="btn-snapshot">📷 画像保存</button>
+        </div>
+        <p class="hint">録画した映像は .webm 形式で保存されます。</p>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

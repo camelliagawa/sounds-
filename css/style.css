@@ -449,6 +449,27 @@ input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
 
 /* ===================================================
+   Responsive — Mobile (キャンバスを上部に固定)
+   =================================================== */
+@media (max-width: 859px) {
+  #stage {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    /* 正方形を保ちつつ、画面の半分強までに抑えて鍵盤を操作しやすく */
+    width: min(100vw, 56vh);
+    height: min(100vw, 56vh);
+    margin: 0 auto;
+    aspect-ratio: auto;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  }
+  #panel {
+    position: relative;
+    z-index: 10;
+  }
+}
+
+/* ===================================================
    Responsive — PC wide
    =================================================== */
 @media (min-width: 860px) {

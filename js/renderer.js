@@ -1,55 +1,11 @@
 // renderer.js
-// パーティクルを Canvas に描画する。砂粒風の見た目に残像（トレイル）を加える。
-// 縦軸・横軸には、楽器の波形形状（フーリエ近似）を使って定在波を表示する。
+// パーティクルを Canvas に描画する。
+// 縦軸・横軸には、楽器波形（実測倍音スペクトル）と
+// 参照用サイン波（薄く重ねて表示）を描く。
 
-// 楽器別の倍音スペクトル（実測に近い相対振幅）。
-// HARMONICS[楽器] = [第1倍音(基音), 第2倍音, 第3倍音, ...] の振幅。
-// 理想的な幾何波形ではなく、実際の楽器の倍音構成をフーリエ合成して
-// 軸に描くことで、その音色固有の波形を可視化する。
-const HARMONICS = {
-  // フルート：基音がほぼ支配的で倍音は弱い（純音に近い）
-  flute:  [1.00, 0.22, 0.10, 0.05, 0.03, 0.02],
+import { WAVE, sinWave } from './waveforms.js';
 
-  // ピアノ：全倍音を含む豊かなスペクトル（偶数倍音も存在）。
-  // 三角波（奇数倍音のみ）とは異なり、第2・第3倍音が強い。
-  piano:  [1.00, 0.45, 0.32, 0.40, 0.18, 0.14, 0.10, 0.07, 0.05, 0.03],
-
-  // バイオリン：弓による弦の運動（ヘルムホルツ運動）でほぼ鋸歯波。
-  // 胴の共鳴で中域倍音が持ち上がる。
-  violin: [1.00, 0.55, 0.58, 0.40, 0.33, 0.26, 0.20, 0.15, 0.11, 0.08],
-
-  // チェロ：バイオリンより低音で、低次倍音がさらに豊か。
-  cello:  [1.00, 0.72, 0.55, 0.48, 0.40, 0.32, 0.26, 0.20, 0.15, 0.11, 0.08],
-};
-
-// 倍音振幅の配列から、ピーク振幅で正規化した波形関数を作る。
-// phase は mode * PI * t。倍音 k は (k+1)*phase で振動する。
-function makeWave(harmonics) {
-  // 1周期をサンプリングしてピーク値を求め、±1に正規化
-  let peak = 0;
-  const N = 1024;
-  for (let i = 0; i < N; i++) {
-    const ph = (i / N) * 2 * Math.PI;
-    let v = 0;
-    for (let k = 0; k < harmonics.length; k++) v += harmonics[k] * Math.sin((k + 1) * ph);
-    peak = Math.max(peak, Math.abs(v));
-  }
-  const norm = peak > 0 ? 1 / peak : 1;
-  return (phase) => {
-    let v = 0;
-    for (let k = 0; k < harmonics.length; k++) v += harmonics[k] * Math.sin((k + 1) * phase);
-    return v * norm;
-  };
-}
-
-const WAVE = {
-  flute:  makeWave(HARMONICS.flute),
-  piano:  makeWave(HARMONICS.piano),
-  violin: makeWave(HARMONICS.violin),
-  cello:  makeWave(HARMONICS.cello),
-};
-
-// 楽器ごとの縦軸（緑系）カラー
+// 楽器ごとの縦軸カラー
 const AXIS_COLOR = {
   flute:  'rgba(52,  211, 165, 0.92)', // teal
   piano:  'rgba(147, 197, 253, 0.92)', // blue
@@ -64,7 +20,7 @@ export class Renderer {
     this.dpr      = Math.min(window.devicePixelRatio || 1, 2);
     this.size     = 0;
     this.showAxes = true;
-    this.waveType = 'piano'; // 初期楽器
+    this.waveType = 'piano';
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -100,8 +56,8 @@ export class Renderer {
 
   draw(particles) {
     const ctx = this.ctx;
-    const W = this.canvas.width;
-    const H = this.canvas.height;
+    const W   = this.canvas.width;
+    const H   = this.canvas.height;
 
     ctx.fillStyle = 'rgba(6, 6, 12, 0.22)';
     ctx.fillRect(0, 0, W, H);
@@ -124,23 +80,24 @@ export class Renderer {
   }
 
   _drawAxes(field, p) {
-    const ctx  = this.ctx;
-    const W    = this.canvas.width;
-    const H    = this.canvas.height;
-    const PI   = Math.PI;
-    const m    = field._m;
-    const n    = field._n;
-    const wave = WAVE[this.waveType] || WAVE.flute;
-    const color = AXIS_COLOR[this.waveType] || AXIS_COLOR.flute;
+    const ctx   = this.ctx;
+    const W     = this.canvas.width;
+    const H     = this.canvas.height;
+    const PI    = Math.PI;
+    const m     = field._m;
+    const n     = field._n;
+    const wave  = WAVE[this.waveType] || WAVE.piano;
+    const color = AXIS_COLOR[this.waveType] || AXIS_COLOR.piano;
 
     // ガター背景
     ctx.fillStyle = '#08080f';
     ctx.fillRect(0, 0, p.gl, H);
     ctx.fillRect(p.gl, p.h, W - p.gl, p.gb);
 
-    // ゼロ中心線（破線）
     const cxLeft   = p.gl * 0.5;
     const cyBottom = p.h + p.gb * 0.5;
+
+    // ゼロ中心線（破線）
     ctx.setLineDash([4 * this.dpr, 4 * this.dpr]);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
     ctx.lineWidth = 1;
@@ -158,36 +115,59 @@ export class Renderer {
     ctx.moveTo(p.gl, p.h); ctx.lineTo(W, p.h);
     ctx.stroke();
 
-    ctx.lineWidth = Math.max(1.4, this.dpr * 1.1);
-    ctx.lineJoin  = 'round';
-
-    // 縦波（左ガター）：楽器波形 × n モード
-    const ampX  = p.gl * 0.36;
     const stepsY = Math.max(120, Math.round(p.h / 1.5));
+    const stepsX = Math.max(120, Math.round(p.w / 1.5));
+    const ampX   = p.gl * 0.36;
+    const ampY   = p.gb * 0.36;
+
+    ctx.lineJoin = 'round';
+
+    // ── 1. サイン波参照線（薄い白、細線） ──────────────────────
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth   = Math.max(1, this.dpr * 0.8);
+
+    // 縦（サイン）
+    ctx.beginPath();
+    for (let i = 0; i <= stepsY; i++) {
+      const t  = i / stepsY;
+      const py = p.y + t * p.h;
+      const px = cxLeft + sinWave(n * PI * t) * ampX;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // 横（サイン）
+    ctx.beginPath();
+    for (let i = 0; i <= stepsX; i++) {
+      const t  = i / stepsX;
+      const px = p.x + t * p.w;
+      const py = cyBottom - sinWave(m * PI * t) * ampY;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // ── 2. 楽器波形（実測倍音スペクトル、太め・鮮やか） ────────
+    ctx.lineWidth = Math.max(1.8, this.dpr * 1.2);
+
+    // 縦（楽器波形）
     ctx.strokeStyle = color;
     ctx.beginPath();
     for (let i = 0; i <= stepsY; i++) {
       const t  = i / stepsY;
       const py = p.y + t * p.h;
-      const v  = wave(n * PI * t);
-      const px = cxLeft + v * ampX;
-      if (i === 0) ctx.moveTo(px, py);
-      else          ctx.lineTo(px, py);
+      const px = cxLeft + wave(n * PI * t) * ampX;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.stroke();
 
-    // 横波（下ガター）：楽器波形 × m モード
-    const ampY  = p.gb * 0.36;
-    const stepsX = Math.max(120, Math.round(p.w / 1.5));
+    // 横（楽器波形）
     ctx.strokeStyle = 'rgba(235, 238, 250, 0.92)';
     ctx.beginPath();
     for (let i = 0; i <= stepsX; i++) {
       const t  = i / stepsX;
       const px = p.x + t * p.w;
-      const v  = wave(m * PI * t);
-      const py = cyBottom - v * ampY;
-      if (i === 0) ctx.moveTo(px, py);
-      else          ctx.lineTo(px, py);
+      const py = cyBottom - wave(m * PI * t) * ampY;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.stroke();
   }

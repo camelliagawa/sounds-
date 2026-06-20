@@ -140,6 +140,7 @@ instRow.addEventListener('click', async (e) => {
   const type = btn.dataset.inst;
   await instrument.setInstrument(type);
   renderer.setWaveType(type);
+  particles.field.setWaveType(type); // 図形の節線パターンを楽器波形で再計算
 });
 
 // 鍵盤生成

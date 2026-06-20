@@ -22,8 +22,15 @@ export class Renderer {
     this.size     = 0;
     this.showAxes = true;
     this.waveType = 'piano';
+    this.plateShape = 'square'; // 'square' | 'circle'
     this.resize();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  setShape(shape) {
+    this.plateShape = shape === 'circle' ? 'circle' : 'square';
+    this.ctx.fillStyle = '#06060c';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   resize() {
@@ -49,7 +56,10 @@ export class Renderer {
   _plotRect() {
     const W = this.canvas.width;
     const H = this.canvas.height;
-    if (!this.showAxes) return { x: 0, y: 0, w: W, h: H, gl: 0, gb: 0 };
+    // 円形プレートは盤面を画面いっぱいに使う（軸ガターなし）
+    if (this.plateShape === 'circle' || !this.showAxes) {
+      return { x: 0, y: 0, w: W, h: H, gl: 0, gb: 0 };
+    }
     const gl = Math.round(W * 0.13);
     const gb = Math.round(H * 0.13);
     return { x: gl, y: 0, w: W - gl, h: H - gb, gl, gb };
@@ -59,6 +69,7 @@ export class Renderer {
     const ctx = this.ctx;
     const W   = this.canvas.width;
     const H   = this.canvas.height;
+    const circle = this.plateShape === 'circle';
 
     ctx.fillStyle = 'rgba(6, 6, 12, 0.22)';
     ctx.fillRect(0, 0, W, H);
@@ -66,6 +77,14 @@ export class Renderer {
     const p = this._plotRect();
     const { x, y, count } = particles;
     const r = Math.max(0.6, this.dpr * 0.7);
+
+    // 円形は盤面（内接円）でクリップして砂を描く
+    if (circle) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, Math.min(W, H) / 2 - this.dpr, 0, Math.PI * 2);
+      ctx.clip();
+    }
 
     ctx.fillStyle = 'rgba(235, 238, 250, 0.9)';
     ctx.beginPath();
@@ -77,7 +96,23 @@ export class Renderer {
     }
     ctx.fill();
 
-    if (this.showAxes) this._drawAxes(particles.field, p);
+    if (circle) {
+      ctx.restore();
+      this._drawPlateRim();
+    } else if (this.showAxes) {
+      this._drawAxes(particles.field, p);
+    }
+  }
+
+  // 円形プレートの縁
+  _drawPlateRim() {
+    const ctx = this.ctx;
+    const W = this.canvas.width, H = this.canvas.height;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = Math.max(1, this.dpr);
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, Math.min(W, H) / 2 - this.dpr, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   _drawAxes(field, p) {

@@ -137,7 +137,9 @@ instRow.addEventListener('click', async (e) => {
   if (!btn) return;
   instRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
   btn.classList.add('active');
-  await instrument.setInstrument(btn.dataset.inst);
+  const type = btn.dataset.inst;
+  await instrument.setInstrument(type);
+  renderer.setWaveType(type);
 });
 
 // 鍵盤生成

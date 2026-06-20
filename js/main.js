@@ -1,6 +1,6 @@
 // main.js
 
-import { ParticleSystem } from './chladni.js';
+import { ParticleSystem, PLATE_PRESETS } from './chladni.js';
 import { Renderer } from './renderer.js';
 import { AudioInput, supportsTabAudio } from './audio.js';
 import { SampleInstrument, NOTES } from './sampler.js';
@@ -142,8 +142,32 @@ instRow.addEventListener('click', async (e) => {
   btn.classList.add('active');
   const type = btn.dataset.inst;
   await instrument.setInstrument(type);
-  renderer.setWaveType(type);
-  particles.field.setWaveType(type); // 図形の節線パターンを楽器波形で再計算
+  renderer.setWaveType(type); // 音色は軸の波形表示にのみ反映（図形は板の物理で決まる）
+});
+
+// ---- 板の形状 ----
+const shapeRow = $('shape-row');
+shapeRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.inst-btn');
+  if (!btn) return;
+  shapeRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const shape = btn.dataset.shape;
+  particles.field.setShape(shape);
+  renderer.setShape(shape);
+  renderer.draw(particles); // 一時停止中でも即反映
+});
+
+// ---- 板スケール（大きさ） ----
+const scaleRow = $('scale-row');
+scaleRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.inst-btn');
+  if (!btn) return;
+  scaleRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const preset = PLATE_PRESETS[btn.dataset.scale] || PLATE_PRESETS.medium;
+  particles.field.setPlateC(preset.C);
+  renderer.draw(particles);
 });
 
 // 鍵盤生成
@@ -247,7 +271,10 @@ function loop(now) {
     renderer.draw(particles);
   }
 
-  hud.mn.textContent = `m=${particles.field.m} n=${particles.field.n}`;
+  const fld = particles.field;
+  hud.mn.textContent = fld.shape === 'circle'
+    ? `節直径${fld.m} 節円${fld.n}`
+    : `m=${fld.m} n=${fld.n}`;
 
   frames++;
   if (now - fpsTime >= 1000) {

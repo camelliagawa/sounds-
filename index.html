@@ -62,6 +62,24 @@
         <p class="hint" id="src-hint">手動モード：スライダーで振動を操作します。</p>
       </div>
 
+      <!-- 板の形状 -->
+      <div class="group">
+        <h2 class="group-title">板の形状</h2>
+        <div class="inst-grid" id="shape-row">
+          <button class="inst-btn active" data-shape="square">⬛ 正方形</button>
+          <button class="inst-btn" data-shape="circle">⚫ 円形</button>
+        </div>
+        <div class="ctrl" style="margin-top:10px">
+          <div class="ctrl-label"><span>板の大きさ</span></div>
+          <div class="inst-grid" id="scale-row">
+            <button class="inst-btn" data-scale="large">大（線少）</button>
+            <button class="inst-btn active" data-scale="medium">標準</button>
+            <button class="inst-btn" data-scale="small">小（線多）</button>
+          </div>
+        </div>
+        <p class="hint">自由端の薄板を物理モデルで再現。周波数を上げるほど節線が増えます。</p>
+      </div>
+
       <!-- パラメータ -->
       <div class="group">
         <h2 class="group-title">パラメータ</h2>
@@ -112,7 +130,7 @@
           <button class="inst-btn" data-inst="cello">チェロ</button>
         </div>
         <div class="keys" id="keys"></div>
-        <p class="hint">「サイン波」は単振動（基音のみ）の基本図形。鍵盤をタップすると音が鳴り、図形が変化します。</p>
+        <p class="hint">鍵盤をタップすると音が鳴り、その周波数で図形が変化します。楽器の選択は音色と軸の波形表示に反映されます（図形は板の物理で決まります）。</p>
       </div>
 
       <!-- 録画 -->

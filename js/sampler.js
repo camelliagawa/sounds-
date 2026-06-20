@@ -42,6 +42,13 @@ export class SampleInstrument {
 
     let synth;
     switch (type) {
+      case 'sine':
+        // 純粋なサイン波（単振動）
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.01, decay: 0.05, sustain: 0.95, release: 0.4 },
+        });
+        break;
       case 'violin':
         synth = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: 'sawtooth' },

@@ -44,13 +44,15 @@ function makeLUT(harmonics) {
   };
 }
 
+// 比較用／単振動モード：純粋なサイン波（基準線として軸に重ねて描く）
+export const sinWave = (phase) => Math.sin(phase);
+
 // 各楽器の LUT 波形関数（起動時に一度だけ生成）
+// sine は単振動（基音のみ）。クラドニ図形の基本形を見るためのモード。
 export const WAVE = {
+  sine:   sinWave,
   flute:  makeLUT(HARMONICS.flute),
   piano:  makeLUT(HARMONICS.piano),
   violin: makeLUT(HARMONICS.violin),
   cello:  makeLUT(HARMONICS.cello),
 };
-
-// 比較用：純粋なサイン波（基準線として軸に重ねて描く）
-export const sinWave = (phase) => Math.sin(phase);

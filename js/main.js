@@ -189,6 +189,15 @@ recBtn.addEventListener('click', () => {
 
 $('btn-snapshot').addEventListener('click', () => saveSnapshot($('canvas')));
 
+// ---- 波形表示トグル ----
+const toggleAxes = $('toggle-axes');
+toggleAxes.addEventListener('change', () => {
+  renderer.setShowAxes(toggleAxes.checked);
+  // 一時停止中でもすぐ反映されるよう一度描画
+  renderer.draw(particles);
+});
+renderer.setShowAxes(toggleAxes.checked);
+
 // ---- メインループ ----
 let lastFreqUpdate = 0;
 let frames = 0;

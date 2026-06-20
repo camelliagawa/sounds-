@@ -135,6 +135,12 @@ html, body {
   grid-template-columns: repeat(3, 1fr);
   gap: 3px;
   z-index: 6;
+  transition: left 0.2s, bottom 0.2s;
+}
+/* 波形表示中はガター（13%）の内側へ寄せて波形と重ならないようにする */
+.note-pad.inset {
+  left: calc(13% + 5px);
+  bottom: calc(13% + 5px);
 }
 .note-pad button {
   width: 34px;

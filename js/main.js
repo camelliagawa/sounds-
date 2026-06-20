@@ -203,12 +203,15 @@ $('btn-snapshot').addEventListener('click', () => saveSnapshot($('canvas')));
 
 // ---- 波形表示トグル ----
 const toggleAxes = $('toggle-axes');
-toggleAxes.addEventListener('change', () => {
-  renderer.setShowAxes(toggleAxes.checked);
+function applyAxes(on) {
+  renderer.setShowAxes(on);
+  // 波形表示中はパッドをガター内側へ寄せて重なりを防ぐ
+  padEl.classList.toggle('inset', on);
   // 一時停止中でもすぐ反映されるよう一度描画
   renderer.draw(particles);
-});
-renderer.setShowAxes(toggleAxes.checked);
+}
+toggleAxes.addEventListener('change', () => applyAxes(toggleAxes.checked));
+applyAxes(toggleAxes.checked);
 
 // ---- メインループ ----
 let lastFreqUpdate = 0;

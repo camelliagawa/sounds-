@@ -127,6 +127,38 @@ html, body {
 }
 @keyframes blink { 50% { opacity: 0.3; } }
 
+/* 左下 音名パッド */
+.note-pad {
+  position: absolute;
+  left: 8px; bottom: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  z-index: 6;
+}
+.note-pad button {
+  width: 34px;
+  height: 26px;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: rgba(10, 10, 22, 0.55);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-hi);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, transform 0.08s, box-shadow 0.1s;
+}
+.note-pad button:hover { color: var(--text); background: rgba(20, 20, 42, 0.7); }
+.note-pad button:active { transform: scale(0.9); }
+.note-pad button.playing {
+  background: var(--accent-lo);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
 /* ===================================================
    Panel
    =================================================== */

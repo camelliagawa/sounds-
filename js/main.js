@@ -141,28 +141,40 @@ instRow.addEventListener('click', async (e) => {
 });
 
 // 鍵盤生成
+// 音を鳴らし、手動モードなら図形へ反映する共通処理
+async function triggerNote(note, btnEl) {
+  btnEl.classList.add('playing');
+  setTimeout(() => btnEl.classList.remove('playing'), 400);
+
+  const freq = await instrument.play(note);
+
+  if (mode === 'manual') {
+    const v = Math.round(freq);
+    $('freq-range').value = v;
+    $('freq-num').value   = v;
+    applyFreq(freq);
+  }
+}
+
 const keysEl = $('keys');
 NOTES.forEach((note) => {
   const b = document.createElement('button');
   b.className = 'key-btn';
   b.textContent = note.replace(/\d/, ''); // 'C4' → 'C'
   b.title = note;
-
-  b.addEventListener('click', async () => {
-    b.classList.add('playing');
-    setTimeout(() => b.classList.remove('playing'), 400);
-
-    const freq = await instrument.play(note);
-
-    // 手動モードのとき図形へ反映
-    if (mode === 'manual') {
-      const v = Math.round(freq);
-      $('freq-range').value = v;
-      $('freq-num').value   = v;
-      applyFreq(freq);
-    }
-  });
+  b.addEventListener('click', () => triggerNote(note, b));
   keysEl.appendChild(b);
+});
+
+// 左下 音名パッド（高音域）
+const PAD_NOTES = ['C6', 'E6', 'G6', 'F5', 'G5', 'A5', 'C4', 'F4', 'C5'];
+const padEl = $('note-pad');
+PAD_NOTES.forEach((note) => {
+  const b = document.createElement('button');
+  b.textContent = note;
+  b.title = note;
+  b.addEventListener('click', () => triggerNote(note, b));
+  padEl.appendChild(b);
 });
 
 // ---- 録画 / スナップショット ----

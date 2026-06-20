@@ -2,32 +2,51 @@
 // パーティクルを Canvas に描画する。砂粒風の見た目に残像（トレイル）を加える。
 // 縦軸・横軸には、楽器の波形形状（フーリエ近似）を使って定在波を表示する。
 
-// 楽器別の波形関数。引数 phase = mode * PI * t（0〜n·π の範囲）。
-// フーリエ級数で各波形を近似し、軸に描くことで音色の倍音構造を視覚化する。
+// 楽器別の倍音スペクトル（実測に近い相対振幅）。
+// HARMONICS[楽器] = [第1倍音(基音), 第2倍音, 第3倍音, ...] の振幅。
+// 理想的な幾何波形ではなく、実際の楽器の倍音構成をフーリエ合成して
+// 軸に描くことで、その音色固有の波形を可視化する。
+const HARMONICS = {
+  // フルート：基音がほぼ支配的で倍音は弱い（純音に近い）
+  flute:  [1.00, 0.22, 0.10, 0.05, 0.03, 0.02],
+
+  // ピアノ：全倍音を含む豊かなスペクトル（偶数倍音も存在）。
+  // 三角波（奇数倍音のみ）とは異なり、第2・第3倍音が強い。
+  piano:  [1.00, 0.45, 0.32, 0.40, 0.18, 0.14, 0.10, 0.07, 0.05, 0.03],
+
+  // バイオリン：弓による弦の運動（ヘルムホルツ運動）でほぼ鋸歯波。
+  // 胴の共鳴で中域倍音が持ち上がる。
+  violin: [1.00, 0.55, 0.58, 0.40, 0.33, 0.26, 0.20, 0.15, 0.11, 0.08],
+
+  // チェロ：バイオリンより低音で、低次倍音がさらに豊か。
+  cello:  [1.00, 0.72, 0.55, 0.48, 0.40, 0.32, 0.26, 0.20, 0.15, 0.11, 0.08],
+};
+
+// 倍音振幅の配列から、ピーク振幅で正規化した波形関数を作る。
+// phase は mode * PI * t。倍音 k は (k+1)*phase で振動する。
+function makeWave(harmonics) {
+  // 1周期をサンプリングしてピーク値を求め、±1に正規化
+  let peak = 0;
+  const N = 1024;
+  for (let i = 0; i < N; i++) {
+    const ph = (i / N) * 2 * Math.PI;
+    let v = 0;
+    for (let k = 0; k < harmonics.length; k++) v += harmonics[k] * Math.sin((k + 1) * ph);
+    peak = Math.max(peak, Math.abs(v));
+  }
+  const norm = peak > 0 ? 1 / peak : 1;
+  return (phase) => {
+    let v = 0;
+    for (let k = 0; k < harmonics.length; k++) v += harmonics[k] * Math.sin((k + 1) * phase);
+    return v * norm;
+  };
+}
+
 const WAVE = {
-  // フルート：純粋なサイン波（基音のみ）
-  flute: (p) => Math.sin(p),
-
-  // ピアノ：三角波（奇数倍音が 1/n² で減衰）
-  piano: (p) => {
-    const k = 8 / (Math.PI * Math.PI);
-    return k * (Math.sin(p) - Math.sin(3 * p) / 9 + Math.sin(5 * p) / 25 - Math.sin(7 * p) / 49);
-  },
-
-  // バイオリン：鋸歯波（全倍音が 1/n で減衰）
-  violin: (p) => {
-    const k = 2 / Math.PI;
-    return k * (Math.sin(p) - Math.sin(2 * p) / 2 + Math.sin(3 * p) / 3 - Math.sin(4 * p) / 4 + Math.sin(5 * p) / 5);
-  },
-
-  // チェロ：太い鋸歯波（さらに高次倍音を含む）
-  cello: (p) => {
-    const k = 2 / Math.PI;
-    return k * (
-      Math.sin(p) - Math.sin(2 * p) / 2 + Math.sin(3 * p) / 3
-      - Math.sin(4 * p) / 4 + Math.sin(5 * p) / 5 - Math.sin(6 * p) / 6
-    );
-  },
+  flute:  makeWave(HARMONICS.flute),
+  piano:  makeWave(HARMONICS.piano),
+  violin: makeWave(HARMONICS.violin),
+  cello:  makeWave(HARMONICS.cello),
 };
 
 // 楽器ごとの縦軸（緑系）カラー

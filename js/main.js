@@ -19,6 +19,9 @@ let mode       = 'manual'; // 'manual' | 'mic' | 'tab'
 let manualFreq = 440;
 let animPaused = false;    // アニメーション一時停止フラグ
 
+// 1フレームあたりの物理ステップ数。大きいほど図形が速く変化・収束する。
+const SUBSTEPS = 3;
+
 // ---- HUD ----
 const hud = {
   mode: $('hud-mode'),
@@ -238,7 +241,9 @@ function loop(now) {
   }
 
   if (!animPaused) {
-    particles.step();
+    // 1フレームに複数回ステップを進めて図形の変化を速くする。
+    // 描画は重い（粒子数ぶんの arc）ので 1 回だけにし、物理だけ多重化する。
+    for (let s = 0; s < SUBSTEPS; s++) particles.step();
     renderer.draw(particles);
   }
 

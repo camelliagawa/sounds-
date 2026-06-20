@@ -7,6 +7,7 @@ import { WAVE, sinWave } from './waveforms.js';
 
 // 楽器ごとの縦軸カラー
 const AXIS_COLOR = {
+  sine:   'rgba(226, 232, 240, 0.92)', // white（単振動）
   flute:  'rgba(52,  211, 165, 0.92)', // teal
   piano:  'rgba(147, 197, 253, 0.92)', // blue
   violin: 'rgba(251, 191, 36,  0.92)', // amber

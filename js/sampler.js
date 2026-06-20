@@ -4,9 +4,13 @@
 const NOTE_FREQ = {
   C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23,
   G4: 392.0,  A4: 440.0,  B4: 493.88, C5: 523.25,
+  // 高音域（左下の音名パッド用）
+  F5: 698.46, G5: 783.99, A5: 880.0,
+  C6: 1046.5, E6: 1318.51, G6: 1567.98,
 };
 
-export const NOTES = Object.keys(NOTE_FREQ);
+// メイン鍵盤に並べる音（C4〜C5）
+export const NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
 export function noteToFreq(note) { return NOTE_FREQ[note]; }
 
 export class SampleInstrument {

@@ -13,19 +13,6 @@
     <!-- ===== Canvas ===== -->
     <section id="stage">
       <canvas id="canvas"></canvas>
-
-      <div id="hud">
-        <span id="hud-freq">440 Hz</span>
-        <span id="hud-mn">m=2 n=3</span>
-        <span id="hud-fps">— fps</span>
-      </div>
-
-      <!-- アニメーション 再生/停止 -->
-      <button id="btn-anim" class="btn-anim" title="アニメーション 再生/停止">
-        <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-        <svg id="icon-play"  viewBox="0 0 24 24" fill="currentColor" class="hidden"><polygon points="5,3 19,12 5,21"/></svg>
-      </button>
-
       <div id="rec-badge" class="hidden">● REC</div>
     </section>
 
@@ -33,11 +20,21 @@
     <section id="panel">
 
       <header id="app-header">
-        <div>
+        <div class="header-title">
           <h1>Chladni</h1>
           <p>クラドニ図形 ビジュアライザー</p>
         </div>
+        <button id="btn-anim" class="btn-anim" title="アニメーション 再生/停止">
+          <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <svg id="icon-play"  viewBox="0 0 24 24" fill="currentColor" class="hidden"><polygon points="5,3 19,12 5,21"/></svg>
+        </button>
       </header>
+
+      <div id="hud">
+        <span id="hud-freq">440 Hz</span>
+        <span id="hud-mn">m=2 n=3</span>
+        <span id="hud-fps">— fps</span>
+      </div>
 
       <!-- 板の形状 -->
       <div class="group">

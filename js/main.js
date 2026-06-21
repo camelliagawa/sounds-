@@ -102,17 +102,34 @@ shapeRow.addEventListener('click', (e) => {
   renderer.draw(particles);
 });
 
-// ---- 板スケール（大きさ） ----
-const scaleRow = $('scale-row');
+// ---- 板スケール（大きさ）----
+// プリセットボタンとスライダーを双方向同期する。
+const scaleRow    = $('scale-row');
+const plateCRange = $('plate-c-range');
+
+function applyPlateC(C, activeKey) {
+  particles.field.setPlateC(C);
+  plateCRange.value = C;
+  scaleRow.querySelectorAll('.inst-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.scale === activeKey);
+  });
+  wake();
+  renderer.draw(particles);
+}
+
 scaleRow.addEventListener('click', (e) => {
   const btn = e.target.closest('.inst-btn');
   if (!btn) return;
-  scaleRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
-  btn.classList.add('active');
-  const preset = PLATE_PRESETS[btn.dataset.scale] || PLATE_PRESETS.medium;
-  particles.field.setPlateC(preset.C);
-  wake();
-  renderer.draw(particles);
+  const key    = btn.dataset.scale;
+  const preset = PLATE_PRESETS[key] || PLATE_PRESETS.medium;
+  applyPlateC(preset.C, key);
+});
+
+plateCRange.addEventListener('input', () => {
+  const C = +plateCRange.value;
+  // スライダーがプリセット値にぴったり一致したときだけ選択表示する。
+  const match = Object.entries(PLATE_PRESETS).find(([, p]) => Math.abs(p.C - C) < 0.01);
+  applyPlateC(C, match ? match[0] : null);
 });
 
 // ---- 録画 / スナップショット ----

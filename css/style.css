@@ -280,6 +280,21 @@ input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
 }
 .inst-btn:hover { background: var(--surface-3); color: var(--text); }
 .inst-btn:active { transform: scale(0.95); }
+/* 板の大きさ スライダー行 */
+.plate-c-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.plate-c-side {
+  font-size: 10px;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex: none;
+}
+.plate-c-ctrl input[type="range"] { flex: 1; }
+
 .inst-btn.active {
   background: var(--accent-lo);
   border-color: var(--accent);

@@ -224,3 +224,68 @@ requestAnimationFrame(loop);
 
 // リサイズ時はキャンバスがクリアされるため、再描画のため再開させる。
 window.addEventListener('resize', wake);
+
+// ---- Pull to Refresh (モバイル) ----
+(function setupPullToRefresh() {
+  const THRESHOLD = 80;
+  let startY    = 0;
+  let isPulling = false;
+
+  const el = document.createElement('div');
+  el.id = 'ptr-indicator';
+  el.innerHTML = '<span id="ptr-icon">↓</span>';
+  document.body.appendChild(el);
+
+  const icon = document.getElementById('ptr-icon');
+
+  function setPos(ty, opacity) {
+    el.style.transform = `translateX(-50%) translateY(${ty}px)`;
+    el.style.opacity   = String(opacity);
+  }
+
+  function reset() {
+    setPos(-60, 0);
+    el.classList.remove('ready', 'refreshing');
+    icon.textContent = '↓';
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    if (window.scrollY < 10) {
+      startY    = e.touches[0].clientY;
+      isPulling = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!isPulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { isPulling = false; reset(); return; }
+
+    if (e.cancelable) e.preventDefault();
+
+    const ty = -60 + Math.min(dy, 80);
+    setPos(ty, Math.min(dy / THRESHOLD, 1));
+
+    const ready = dy >= THRESHOLD;
+    el.classList.toggle('ready', ready);
+    icon.textContent = ready ? '↻' : '↓';
+  }, { passive: false });
+
+  document.addEventListener('touchend', (e) => {
+    if (!isPulling) return;
+    isPulling = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy >= THRESHOLD) {
+      el.classList.add('refreshing');
+      setPos(20, 1);
+      setTimeout(() => location.reload(), 400);
+    } else {
+      reset();
+    }
+  });
+
+  document.addEventListener('touchcancel', () => {
+    isPulling = false;
+    reset();
+  });
+})();

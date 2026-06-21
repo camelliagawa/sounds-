@@ -47,6 +47,8 @@ btnAnim.addEventListener('click', () => {
 function applyFreq(freq) {
   manualFreq = freq;
   particles.field.setFromFrequency(freq);
+  // 節線モードはアニメーションしないため、周波数変化を即時描画
+  if (renderer.drawMode === 'lines') renderer.draw(particles);
 }
 
 function linkRangeNumber(rangeId, numId, onChange) {
@@ -218,6 +220,17 @@ recBtn.addEventListener('click', () => {
 });
 
 $('btn-snapshot').addEventListener('click', () => saveSnapshot($('canvas')));
+
+// ---- 描画モード ----
+const drawmodeRow = $('drawmode-row');
+drawmodeRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.inst-btn');
+  if (!btn) return;
+  drawmodeRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderer.setDrawMode(btn.dataset.drawmode);
+  renderer.draw(particles); // 切り替え直後に即描画
+});
 
 // ---- 波形表示トグル ----
 const toggleAxes = $('toggle-axes');

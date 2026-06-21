@@ -3,7 +3,6 @@
 import { ParticleSystem, PLATE_PRESETS } from './chladni.js';
 import { Renderer } from './renderer.js';
 import { AudioInput, supportsTabAudio } from './audio.js';
-import { SampleInstrument, NOTES } from './sampler.js';
 import { CanvasRecorder, saveSnapshot } from './recorder.js';
 
 const $ = (id) => document.getElementById(id);
@@ -12,7 +11,6 @@ const $ = (id) => document.getElementById(id);
 const particles = new ParticleSystem(12000);
 const renderer  = new Renderer($('canvas'));
 const audio     = new AudioInput();
-const instrument = new SampleInstrument();
 const recorder  = new CanvasRecorder($('canvas'));
 
 let mode       = 'manual'; // 'manual' | 'mic' | 'tab'
@@ -160,43 +158,6 @@ scaleRow.addEventListener('click', (e) => {
   renderer.draw(particles);
 });
 
-// 鍵盤生成
-// 音を鳴らし、手動モードなら図形へ反映する共通処理
-async function triggerNote(note, btnEl) {
-  btnEl.classList.add('playing');
-  setTimeout(() => btnEl.classList.remove('playing'), 400);
-
-  const freq = await instrument.play(note);
-
-  if (mode === 'manual') {
-    const v = Math.round(freq);
-    $('freq-range').value = v;
-    $('freq-num').value   = v;
-    applyFreq(freq);
-  }
-}
-
-const keysEl = $('keys');
-NOTES.forEach((note) => {
-  const b = document.createElement('button');
-  b.className = 'key-btn';
-  b.textContent = note.replace(/\d/, ''); // 'C4' → 'C'
-  b.title = note;
-  b.addEventListener('click', () => triggerNote(note, b));
-  keysEl.appendChild(b);
-});
-
-// 左下 音名パッド（高音域）
-const PAD_NOTES = ['C6', 'E6', 'G6', 'F5', 'G5', 'A5', 'C4', 'F4', 'C5'];
-const padEl = $('note-pad');
-PAD_NOTES.forEach((note) => {
-  const b = document.createElement('button');
-  b.textContent = note;
-  b.title = note;
-  b.addEventListener('click', () => triggerNote(note, b));
-  padEl.appendChild(b);
-});
-
 // ---- 録画 / スナップショット ----
 const recBtn   = $('btn-record');
 const recBadge = $('rec-badge');
@@ -236,8 +197,6 @@ drawmodeRow.addEventListener('click', (e) => {
 const toggleAxes = $('toggle-axes');
 function applyAxes(on) {
   renderer.setShowAxes(on);
-  // 波形表示中はパッドをガター内側へ寄せて重なりを防ぐ
-  padEl.classList.toggle('inset', on);
   // 一時停止中でもすぐ反映されるよう一度描画
   renderer.draw(particles);
 }

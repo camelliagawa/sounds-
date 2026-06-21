@@ -80,6 +80,13 @@ export class ChladniField {
     this._cn = 0;   // 節直径の本数
     this._ck = 2.4; // J_n の引数スケール（節円）
 
+    // 変位場のルックアップテーブル（LUT）。
+    // 円形のベッセル関数や cos をモード変更時に一度だけ格子で計算しキャッシュし、
+    // 粒子ループでは配列の双線形補間だけにして発熱・負荷を抑える。
+    this._lutN = 256;
+    this._lut  = null;
+    this._mode = null;
+
     this._buildModes();
     this.setFromFrequency(this.freq);
   }
@@ -138,6 +145,9 @@ export class ChladniField {
   }
 
   _applyMode(mode) {
+    // 同じ固有モードなら場は変わらない。重い再計算（正規化・LUT構築）を省く。
+    // 周波数スライダーを細かく動かしても、スナップ先が同じならノーコスト。
+    if (mode === this._mode) return;
     this._mode = mode;
     if (mode.shape === 'square') {
       this._p = mode.p;
@@ -171,11 +181,43 @@ export class ChladniField {
       }
     }
     this._scale = mx > 1e-6 ? 1 / mx : 1;
+    this._buildLUT();
   }
 
-  // 物理モードでは周波数からモードを決めるため、楽器による図形変化は行わない。
-  setWaveType() { /* no-op（互換のため残置） */ }
-  setModes()    { /* no-op */ }
+  // モードごとに value(x,y) を (N+1)×(N+1) 格子で前計算してキャッシュする。
+  _buildLUT() {
+    const N = this._lutN;
+    const w = N + 1;
+    if (!this._lut) this._lut = new Float32Array(w * w);
+    const lut = this._lut;
+    const s   = this._scale;
+    for (let j = 0; j <= N; j++) {
+      const y = j / N;
+      for (let i = 0; i <= N; i++) {
+        lut[j * w + i] = this._field(i / N, y) * s;
+      }
+    }
+  }
+
+  // LUT を双線形補間で参照する高速版 value()。粒子シミュレーション用。
+  sample(x, y) {
+    const lut = this._lut;
+    if (!lut) return this.value(x, y);
+    const N = this._lutN, w = N + 1;
+    if (x < 0) x = 0; else if (x > 1) x = 1;
+    if (y < 0) y = 0; else if (y > 1) y = 1;
+    const fx = x * N, fy = y * N;
+    let i = fx | 0, j = fy | 0;
+    if (i >= N) i = N - 1;
+    if (j >= N) j = N - 1;
+    const tx = fx - i, ty = fy - j;
+    const base = j * w + i;
+    const a = lut[base],         b = lut[base + 1];
+    const c = lut[base + w],     d = lut[base + w + 1];
+    const top = a + (b - a) * tx;
+    const bot = c + (d - c) * tx;
+    return top + (bot - top) * ty;
+  }
 
   // 正規化前の生の変位場。
   _field(x, y) {
@@ -202,11 +244,10 @@ export class ChladniField {
   }
 
   // 変位場の値（正規化済み）。|z|≈0 の場所（節線）に砂が集まる。
+  // 節線描画など 1 回限りの精密計算に使う。粒子ループは sample() を使う。
   value(x, y) {
     return this._field(x, y) * this._scale;
   }
-
-  update() { /* モードは離散。粒子の再分布が自然な遷移になる */ }
 }
 
 export class ParticleSystem {
@@ -215,6 +256,7 @@ export class ParticleSystem {
     this.vibration = 0.45;
     this.x         = null;
     this.y         = null;
+    this.energy    = 0; // 直近ステップの平均 |z|（収束検出用）
     this.setCount(count);
   }
 
@@ -237,16 +279,18 @@ export class ParticleSystem {
   }
 
   step() {
-    this.field.update();
     const { x, y, count } = this;
     const field   = this.field;
     const amp     = 0.0009 + this.vibration * 0.02;
     const minMove = 0.00035;
     const circle  = field.shape === 'circle';
+    let sumAbs    = 0;
 
     for (let i = 0; i < count; i++) {
-      const z    = field.value(x[i], y[i]);
-      const move = Math.abs(z) * amp + minMove;
+      const z    = field.sample(x[i], y[i]);
+      const az   = z < 0 ? -z : z;
+      sumAbs    += az;
+      const move = az * amp + minMove;
       x[i] += (Math.random() - 0.5) * move;
       y[i] += (Math.random() - 0.5) * move;
 
@@ -267,5 +311,7 @@ export class ParticleSystem {
         else if (y[i] > 1)  y[i] = 2 - y[i];
       }
     }
+
+    this.energy = sumAbs / count;
   }
 }

@@ -17,6 +17,25 @@ let animPaused = false;
 // 1フレームあたりの物理ステップ数。大きいほど図形が速く変化・収束する。
 const SUBSTEPS = 3;
 
+// ---- 省電力・発熱対策 ----
+// 30fps 上限。砂の表現にはこれで十分で、計算・描画量を半減できる。
+const FRAME_MS = 1000 / 30;
+// 収束判定：平均|z|の高速EMAと低速EMAがこの差以内で一定フレーム続いたら静止とみなす。
+const SETTLE_EPS    = 0.0025;
+const SETTLE_FRAMES = 60;
+
+let frozen      = false; // クラドニ図形が収束し、ステップ・描画を止めている状態
+let settleCount = 0;
+let emaFast     = -1;
+let emaSlow     = -1;
+
+// パラメータ変更時にシミュレーションを再開させる。
+function wake() {
+  frozen = false;
+  settleCount = 0;
+  emaFast = emaSlow = -1;
+}
+
 // ---- HUD ----
 const hud = {
   freq: $('hud-freq'),
@@ -34,12 +53,14 @@ btnAnim.addEventListener('click', () => {
   btnAnim.classList.toggle('paused', animPaused);
   iconPause.classList.toggle('hidden', animPaused);
   iconPlay.classList.toggle('hidden', !animPaused);
+  if (!animPaused) wake(); // 再生で再開
 });
 
 // ---- パラメータ同期 ----
 function applyFreq(freq) {
   manualFreq = freq;
   particles.field.setFromFrequency(freq);
+  wake();
   // 節線モードはアニメーションしないため、周波数変化を即時描画
   if (renderer.drawMode === 'lines') renderer.draw(particles);
 }
@@ -61,8 +82,8 @@ function linkRangeNumber(rangeId, numId, onChange) {
 }
 
 linkRangeNumber('freq-range',  'freq-num',  (v) => applyFreq(v));
-linkRangeNumber('count-range', 'count-num', (v) => particles.setCount(v));
-linkRangeNumber('vibr-range',  'vibr-num',  (v) => particles.setVibration(v / 100));
+linkRangeNumber('count-range', 'count-num', (v) => { particles.setCount(v); wake(); });
+linkRangeNumber('vibr-range',  'vibr-num',  (v) => { particles.setVibration(v / 100); wake(); });
 
 applyFreq(440);
 particles.setVibration(0.45);
@@ -77,6 +98,7 @@ shapeRow.addEventListener('click', (e) => {
   const shape = btn.dataset.shape;
   particles.field.setShape(shape);
   renderer.setShape(shape);
+  wake();
   renderer.draw(particles);
 });
 
@@ -89,6 +111,7 @@ scaleRow.addEventListener('click', (e) => {
   btn.classList.add('active');
   const preset = PLATE_PRESETS[btn.dataset.scale] || PLATE_PRESETS.medium;
   particles.field.setPlateC(preset.C);
+  wake();
   renderer.draw(particles);
 });
 
@@ -124,21 +147,46 @@ drawmodeRow.addEventListener('click', (e) => {
   drawmodeRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
   btn.classList.add('active');
   renderer.setDrawMode(btn.dataset.drawmode);
+  wake();
   renderer.draw(particles);
 });
 
 // ---- メインループ ----
-let frames = 0;
-let fpsTime = performance.now();
+let frames    = 0;
+let fpsTime   = performance.now();
+let lastFrame = 0;
 
 function loop(now) {
   requestAnimationFrame(loop);
 
+  // 30fps 上限。間引いたフレームは即座に戻る（負荷・発熱を抑える）。
+  if (now - lastFrame < FRAME_MS) return;
+  lastFrame = now;
+
   hud.freq.textContent = Math.round(manualFreq) + ' Hz';
 
-  if (!animPaused) {
+  // 節線モードは静止画（変更時のみ描画）なので、ループでは何もしない。
+  // 粒子モードは収束（frozen）するまでステップ＆描画する。
+  const linesMode = renderer.drawMode === 'lines';
+  let working = false;
+  if (!animPaused && !linesMode && !frozen) {
+    working = true;
     for (let s = 0; s < SUBSTEPS; s++) particles.step();
     renderer.draw(particles);
+
+    // 収束検出：平均|z|の高速/低速EMAが十分近づいたら静止とみなして停止。
+    const e = particles.energy;
+    if (emaFast < 0) {
+      emaFast = emaSlow = e;
+    } else {
+      emaFast = emaFast * 0.80 + e * 0.20;
+      emaSlow = emaSlow * 0.97 + e * 0.03;
+    }
+    if (Math.abs(emaFast - emaSlow) < SETTLE_EPS) {
+      if (++settleCount >= SETTLE_FRAMES) frozen = true;
+    } else {
+      settleCount = 0;
+    }
   }
 
   const fld = particles.field;
@@ -148,13 +196,17 @@ function loop(now) {
 
   frames++;
   if (now - fpsTime >= 1000) {
-    hud.fps.textContent = frames + ' fps';
-    frames = 0;
+    // 動作中は実fps、静止中は省電力中であることを示す。
+    hud.fps.textContent = working ? frames + ' fps' : '静止';
+    frames  = 0;
     fpsTime = now;
   }
 }
 
 requestAnimationFrame(loop);
+
+// リサイズ時はキャンバスがクリアされるため、再描画のため再開させる。
+window.addEventListener('resize', wake);
 
 // ---- Pull to Refresh (モバイル) ----
 (function setupPullToRefresh() {

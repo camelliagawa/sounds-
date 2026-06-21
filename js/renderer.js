@@ -21,7 +21,7 @@ export class Renderer {
     this.dpr      = Math.min(window.devicePixelRatio || 1, 2);
     this.size     = 0;
     this.showAxes = true;
-    this.waveType = 'piano';
+    this.waveType = 'sine';
     this.plateShape = 'square'; // 'square' | 'circle'
     this.resize();
     window.addEventListener('resize', () => this.resize());

@@ -15,7 +15,7 @@ export function noteToFreq(note) { return NOTE_FREQ[note]; }
 
 export class SampleInstrument {
   constructor() {
-    this.current = 'piano';
+    this.current = 'sine';
     this.synth = null;
     this._started = false;
   }

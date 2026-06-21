@@ -133,18 +133,6 @@ if (!supportsTabAudio()) {
   $('btn-tab').title = 'PC版Chrome/Edgeで利用可能';
 }
 
-// ---- サンプル音源 ----
-const instRow = $('inst-row');
-instRow.addEventListener('click', async (e) => {
-  const btn = e.target.closest('.inst-btn');
-  if (!btn) return;
-  instRow.querySelectorAll('.inst-btn').forEach((b) => b.classList.remove('active'));
-  btn.classList.add('active');
-  const type = btn.dataset.inst;
-  await instrument.setInstrument(type);
-  renderer.setWaveType(type); // 音色は軸の波形表示にのみ反映（図形は板の物理で決まる）
-});
-
 // ---- 板の形状 ----
 const shapeRow = $('shape-row');
 shapeRow.addEventListener('click', (e) => {

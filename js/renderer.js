@@ -28,9 +28,6 @@ export class Renderer {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  setShowAxes() { /* no-op (removed) */ }
-  setWaveType()  { /* no-op (removed) */ }
-
   resize() {
     const rect = this.canvas.getBoundingClientRect();
     const side = Math.max(1, Math.min(rect.width, rect.height));

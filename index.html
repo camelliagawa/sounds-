@@ -112,7 +112,12 @@
       <!-- 表示 -->
       <div class="group">
         <h2 class="group-title">表示</h2>
-        <label class="toggle">
+        <div class="ctrl-label" style="margin-bottom:6px"><span>描画モード</span></div>
+        <div class="inst-grid" id="drawmode-row">
+          <button class="inst-btn active" data-drawmode="particles">粒子</button>
+          <button class="inst-btn" data-drawmode="lines">節線</button>
+        </div>
+        <label class="toggle" style="margin-top:12px">
           <input type="checkbox" id="toggle-axes" checked />
           <span class="toggle-track"><span class="toggle-knob"></span></span>
           <span class="toggle-label">縦軸・横軸に波形を表示</span>

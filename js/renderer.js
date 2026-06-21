@@ -23,7 +23,7 @@ export class Renderer {
     this.showAxes   = true;
     this.waveType   = 'sine';
     this.plateShape = 'square'; // 'square' | 'circle'
-    this.drawMode   = 'particles'; // 'particles' | 'lines'
+    this.drawMode   = 'lines'; // 'particles' | 'lines'
     this._nodalImgData = null; // 節線の ImgData キャッシュ
     this._nodalKey     = '';   // キャッシュの有効性確認用キー
     this.resize();

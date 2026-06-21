@@ -193,16 +193,6 @@ drawmodeRow.addEventListener('click', (e) => {
   renderer.draw(particles); // 切り替え直後に即描画
 });
 
-// ---- 波形表示トグル ----
-const toggleAxes = $('toggle-axes');
-function applyAxes(on) {
-  renderer.setShowAxes(on);
-  // 一時停止中でもすぐ反映されるよう一度描画
-  renderer.draw(particles);
-}
-toggleAxes.addEventListener('change', () => applyAxes(toggleAxes.checked));
-applyAxes(toggleAxes.checked);
-
 // ---- メインループ ----
 let lastFreqUpdate = 0;
 let frames = 0;

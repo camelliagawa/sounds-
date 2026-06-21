@@ -43,6 +43,22 @@ const hud = {
   fps:  $('hud-fps'),
 };
 
+// ---- 周波数スライダーのモード境界ティック ----
+const freqTicks = $('freq-ticks');
+const FREQ_MIN = 50, FREQ_MAX = 2000;
+
+function updateFreqTicks() {
+  const transitions = particles.field.getTransitionFreqs(FREQ_MIN, FREQ_MAX);
+  freqTicks.innerHTML = '';
+  for (const f of transitions) {
+    const pct = (f - FREQ_MIN) / (FREQ_MAX - FREQ_MIN) * 100;
+    const t = document.createElement('div');
+    t.className = 'freq-tick';
+    t.style.left = pct + '%';
+    freqTicks.appendChild(t);
+  }
+}
+
 // ---- アニメーション 再生/停止 ----
 const btnAnim   = $('btn-anim');
 const iconPause = $('icon-pause');
@@ -61,7 +77,6 @@ function applyFreq(freq) {
   manualFreq = freq;
   particles.field.setFromFrequency(freq);
   wake();
-  // 節線モードはアニメーションしないため、周波数変化を即時描画
   if (renderer.drawMode === 'lines') renderer.draw(particles);
 }
 
@@ -87,6 +102,7 @@ linkRangeNumber('vibr-range',  'vibr-num',  (v) => { particles.setVibration(v / 
 
 applyFreq(440);
 particles.setVibration(0.45);
+updateFreqTicks(); // 初期モード境界を描画
 
 // ---- 板の形状 ----
 const shapeRow = $('shape-row');
@@ -98,6 +114,7 @@ shapeRow.addEventListener('click', (e) => {
   const shape = btn.dataset.shape;
   particles.field.setShape(shape);
   renderer.setShape(shape);
+  updateFreqTicks();
   wake();
   renderer.draw(particles);
 });
@@ -113,6 +130,7 @@ function applyPlateC(C, activeKey) {
   scaleRow.querySelectorAll('.inst-btn').forEach((b) => {
     b.classList.toggle('active', b.dataset.scale === activeKey);
   });
+  updateFreqTicks();
   wake();
   renderer.draw(particles);
 }
@@ -250,7 +268,10 @@ window.addEventListener('resize', wake);
   }
 
   document.addEventListener('touchstart', (e) => {
-    if (window.scrollY < 10) {
+    // ステージ（touch-action: none）上から始まったスワイプのみ対象にする。
+    // これにより iOS Safari で touchmove が必ず cancelable になる。
+    const onStage = !!e.target.closest('#stage');
+    if (onStage && window.scrollY < 10) {
       startY    = e.touches[0].clientY;
       isPulling = true;
     }

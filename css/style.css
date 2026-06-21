@@ -68,6 +68,9 @@ html, body {
   height: 100%;
   touch-action: none;
 }
+/* stage 全体を touch-action: none にして iOS でプルトゥリフレッシュの
+   touchmove が必ずキャンセル可能になるようにする */
+#stage { touch-action: none; }
 
 /* HUD — パネル内に表示 */
 #hud {
@@ -280,6 +283,38 @@ input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
 }
 .inst-btn:hover { background: var(--surface-3); color: var(--text); }
 .inst-btn:active { transform: scale(0.95); }
+/* 周波数スライダー — モード境界ティック */
+.freq-slider-wrap {
+  flex: 1;
+  position: relative;
+}
+.freq-slider-wrap input[type="range"] { width: 100%; }
+#freq-ticks {
+  position: absolute;
+  /* スライダーのつまみ半径（10px）分だけ左右を縮めて目盛りを揃える */
+  left: 10px;
+  right: 10px;
+  bottom: -5px;
+  height: 5px;
+  pointer-events: none;
+}
+.freq-tick {
+  position: absolute;
+  bottom: 0;
+  width: 1.5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+/* 現在スナップ中のモードに対応する境界ティックを強調 */
+.freq-tick.current {
+  background: var(--accent);
+  opacity: 0.7;
+  height: 7px;
+  bottom: -1px;
+}
+
 /* 板の大きさ スライダー行 */
 .plate-c-ctrl {
   display: flex;

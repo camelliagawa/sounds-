@@ -46,9 +46,16 @@
         <div class="ctrl" style="margin-top:10px">
           <div class="ctrl-label"><span>板の大きさ</span></div>
           <div class="inst-grid" id="scale-row">
-            <button class="inst-btn" data-scale="large">大（線少）</button>
+            <button class="inst-btn" data-scale="xlarge">特大</button>
+            <button class="inst-btn" data-scale="large">大</button>
             <button class="inst-btn active" data-scale="medium">標準</button>
-            <button class="inst-btn" data-scale="small">小（線多）</button>
+            <button class="inst-btn" data-scale="small">小</button>
+            <button class="inst-btn" data-scale="xsmall">極小</button>
+          </div>
+          <div class="plate-c-ctrl">
+            <span class="plate-c-side">節線 多</span>
+            <input type="range" id="plate-c-range" min="2" max="45" step="0.5" value="11.5" />
+            <span class="plate-c-side">少</span>
           </div>
         </div>
         <p class="hint">自由端の薄板を物理モデルで再現。周波数を上げるほど節線が増えます。</p>

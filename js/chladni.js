@@ -55,9 +55,11 @@ const PI2 = PI * PI;
 // 板スケールのプリセット（C 定数）。f ≈ C·λ。
 // C が大きいほど同じ周波数で低次モード（線が少ない）。
 export const PLATE_PRESETS = {
-  large:  { label: '大板', C: 23 },   // 線が少ない
+  xlarge: { label: '特大', C: 36   }, // 線ごく少
+  large:  { label: '大',   C: 20   }, // 線少
   medium: { label: '標準', C: 11.5 },
-  small:  { label: '小板', C: 6 },    // 線が多い
+  small:  { label: '小',   C: 6    }, // 線多
+  xsmall: { label: '極小', C: 3.5  }, // 線最多
 };
 
 export class ChladniField {

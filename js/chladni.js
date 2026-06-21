@@ -154,14 +154,31 @@ export class ChladniField {
       this._m  = Math.max(1, mode.n);
       this._n  = Math.max(1, mode.s);
     }
+    this._computeScale();
+  }
+
+  // モードごとに変位場のピーク |z| を求め、形状によらず振幅を揃える。
+  // 円板（ベッセル関数）は値域が小さく、正規化しないと正方形より振動が
+  // 弱く見えてしまうため、ここで 1/peak を掛けて正規化する。
+  _computeScale() {
+    this._scale = 1;
+    let mx = 0;
+    const S = 48;
+    for (let i = 0; i <= S; i++) {
+      for (let j = 0; j <= S; j++) {
+        const v = Math.abs(this._field(i / S, j / S));
+        if (v > mx) mx = v;
+      }
+    }
+    this._scale = mx > 1e-6 ? 1 / mx : 1;
   }
 
   // 物理モードでは周波数からモードを決めるため、楽器による図形変化は行わない。
   setWaveType() { /* no-op（互換のため残置） */ }
   setModes()    { /* no-op */ }
 
-  // 変位場の値。|z|≈0 の場所（節線）に砂が集まる。
-  value(x, y) {
+  // 正規化前の生の変位場。
+  _field(x, y) {
     if (this.shape === 'circle') {
       // 単位正方形 → 中心(0.5,0.5)・半径0.5 の円盤
       const dx = (x - 0.5) * 2;
@@ -182,6 +199,11 @@ export class ChladniField {
       Math.cos(p * PI * x) * Math.cos(q * PI * y) -
       Math.cos(q * PI * x) * Math.cos(p * PI * y)
     );
+  }
+
+  // 変位場の値（正規化済み）。|z|≈0 の場所（節線）に砂が集まる。
+  value(x, y) {
+    return this._field(x, y) * this._scale;
   }
 
   update() { /* モードは離散。粒子の再分布が自然な遷移になる */ }

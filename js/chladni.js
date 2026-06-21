@@ -221,6 +221,19 @@ export class ChladniField {
     return top + (bot - top) * ty;
   }
 
+  // 周波数スライダー上に描くモード境界の周波数リストを返す。
+  // 隣接するモードのλ中点を周波数に変換したもの。
+  getTransitionFreqs(minF, maxF) {
+    const modes = this.shape === 'circle' ? this._circleModes : this._squareModes;
+    const C = this.C;
+    const out = [];
+    for (let i = 0; i < modes.length - 1; i++) {
+      const f = C * (modes[i].lam + modes[i + 1].lam) / 2;
+      if (f > minF && f < maxF) out.push(f);
+    }
+    return out;
+  }
+
   // 正規化前の生の変位場。
   _field(x, y) {
     if (this.shape === 'circle') {

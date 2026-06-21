@@ -68,8 +68,11 @@
         <div class="ctrl">
           <div class="ctrl-label"><span>周波数</span><span class="unit">Hz</span></div>
           <div class="ctrl-row">
-            <input type="range"  id="freq-range"  min="50"  max="2000"  step="1"   value="440" />
-            <input type="number" id="freq-num"    min="50"  max="2000"  step="1"   value="440" />
+            <div class="freq-slider-wrap">
+              <input type="range" id="freq-range" min="50" max="2000" step="1" value="440" />
+              <div id="freq-ticks" aria-hidden="true"></div>
+            </div>
+            <input type="number" id="freq-num" min="50" max="2000" step="1" value="440" />
           </div>
         </div>
 

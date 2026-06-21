@@ -127,44 +127,6 @@ html, body {
 }
 @keyframes blink { 50% { opacity: 0.3; } }
 
-/* 左下 音名パッド */
-.note-pad {
-  position: absolute;
-  left: 8px; bottom: 8px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
-  z-index: 6;
-  transition: left 0.2s, bottom 0.2s;
-}
-/* 波形表示中はガター（13%）の内側へ寄せて波形と重ならないようにする */
-.note-pad.inset {
-  left: calc(13% + 5px);
-  bottom: calc(13% + 5px);
-}
-.note-pad button {
-  width: 34px;
-  height: 26px;
-  font-size: 10px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-2);
-  background: rgba(10, 10, 22, 0.55);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--border-hi);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.1s, color 0.1s, transform 0.08s, box-shadow 0.1s;
-}
-.note-pad button:hover { color: var(--text); background: rgba(20, 20, 42, 0.7); }
-.note-pad button:active { transform: scale(0.9); }
-.note-pad button.playing {
-  background: var(--accent-lo);
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
-}
-
 /* ===================================================
    Panel
    =================================================== */
@@ -221,107 +183,11 @@ html, body {
   color: var(--text-3);
 }
 
-/* ===================================================
-   Source buttons
-   =================================================== */
-.source-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.src-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 12px 8px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.08s;
-  min-height: 64px;
-}
-.src-icon { font-size: 20px; line-height: 1; }
-.src-btn:hover { background: var(--surface-3); color: var(--text); }
-.src-btn:active { transform: scale(0.96); }
-.src-btn.active {
-  background: var(--accent-lo);
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent-glow) inset;
-}
-.src-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Audio stop button */
-.btn-danger {
-  width: 100%;
-  padding: 11px;
-  border-radius: var(--r-md);
-  background: var(--red-lo);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.08s;
-  min-height: 44px;
-}
-.btn-danger:hover { background: rgba(239, 68, 68, 0.28); }
-.btn-danger:active { transform: scale(0.98); }
-
 .hint {
   margin: 0;
   font-size: 11px;
   color: var(--text-3);
   line-height: 1.6;
-}
-
-/* Toggle switch */
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-}
-.toggle input { position: absolute; opacity: 0; pointer-events: none; }
-.toggle-track {
-  position: relative;
-  width: 42px;
-  height: 24px;
-  border-radius: 99px;
-  background: var(--surface-3);
-  border: 1px solid var(--border-hi);
-  transition: background 0.18s, border-color 0.18s;
-  flex: none;
-}
-.toggle-knob {
-  position: absolute;
-  top: 2px; left: 2px;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--text-2);
-  transition: transform 0.18s, background 0.18s;
-}
-.toggle input:checked + .toggle-track {
-  background: var(--accent-lo);
-  border-color: var(--accent);
-}
-.toggle input:checked + .toggle-track .toggle-knob {
-  transform: translateX(18px);
-  background: var(--accent);
-}
-.toggle-label {
-  font-size: 13px;
-  color: var(--text);
-  font-weight: 500;
 }
 
 /* ===================================================
@@ -421,39 +287,6 @@ input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
   background: var(--accent-lo);
   border-color: var(--accent);
   color: var(--accent);
-}
-
-/* Piano keys */
-.keys {
-  display: flex;
-  gap: 4px;
-}
-.key-btn {
-  flex: 1;
-  padding: 14px 0 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--border-hi);
-  border-radius: 0 0 var(--r-sm) var(--r-sm);
-  color: var(--text-2);
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.1s, color 0.1s, transform 0.08s;
-  min-height: 56px;
-  position: relative;
-}
-.key-btn:hover { background: var(--surface-3); color: var(--text); }
-.key-btn:active {
-  transform: scale(0.94) translateY(2px);
-  background: var(--accent-lo);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.key-btn.playing {
-  background: var(--accent-lo);
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 /* ===================================================

@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#080810" />
   <title>Chladni — クラドニ図形</title>
   <link rel="stylesheet" href="./css/style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 </head>
 <body>
   <div id="app">
@@ -16,7 +15,6 @@
       <canvas id="canvas"></canvas>
 
       <div id="hud">
-        <span id="hud-mode">手動</span>
         <span id="hud-freq">440 Hz</span>
         <span id="hud-mn">m=2 n=3</span>
         <span id="hud-fps">— fps</span>
@@ -40,24 +38,6 @@
           <p>クラドニ図形 ビジュアライザー</p>
         </div>
       </header>
-
-      <!-- 入力ソース -->
-      <div class="group">
-        <h2 class="group-title">入力ソース</h2>
-        <div class="source-grid">
-          <button id="btn-manual" class="src-btn active" data-mode="manual">
-            <span class="src-icon">✋</span><span>手動</span>
-          </button>
-          <button id="btn-mic" class="src-btn" data-mode="mic">
-            <span class="src-icon">🎤</span><span>マイク</span>
-          </button>
-          <button id="btn-tab" class="src-btn" data-mode="tab">
-            <span class="src-icon">🖥</span><span>タブ音声</span>
-          </button>
-        </div>
-        <button id="btn-audio-stop" class="btn-danger hidden">⏹ 音声入力を停止</button>
-        <p class="hint" id="src-hint">手動モード：スライダーで振動を操作します。</p>
-      </div>
 
       <!-- 板の形状 -->
       <div class="group">
@@ -114,11 +94,6 @@
           <button class="inst-btn" data-drawmode="particles">粒子</button>
           <button class="inst-btn active" data-drawmode="lines">節線</button>
         </div>
-        <label class="toggle" style="margin-top:12px">
-          <input type="checkbox" id="toggle-axes" checked />
-          <span class="toggle-track"><span class="toggle-knob"></span></span>
-          <span class="toggle-label">縦軸・横軸に波形を表示</span>
-        </label>
       </div>
 
       <!-- 録画 -->
